@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -26,7 +25,7 @@ func main() {
 			readFile(path, out)
 		}
 	}()
-
+	//TODO fix : cannot create path if path is not exist
 	go func() {
 		maxLines, _ := strconv.Atoi(os.Args[4])
 		name := os.Args[2] + "/" + os.Args[3] + strconv.Itoa(fileCount)
@@ -45,15 +44,14 @@ func main() {
 
 			}
 			res := <-out
+			count++
 			_, err2 := f.WriteString(res + "\n")
-			fmt.Println("writing", res)
 
 			if err2 != nil {
 				log.Println(err2)
 			}
 		}
 	}()
-	fmt.Println(os.Args[1], os.Args[2])
 	wg.Wait()
 }
 func readFile(path string, out chan string) {
@@ -67,9 +65,7 @@ func readFile(path string, out chan string) {
 	scanner.Split(bufio.ScanLines)
 
 	for scanner.Scan() {
-		fmt.Println("reading", scanner.Text())
 		out <- scanner.Text()
-		count++
 	}
 	file.Close()
 	defer wg.Done()
