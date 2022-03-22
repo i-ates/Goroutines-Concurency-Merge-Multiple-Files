@@ -31,6 +31,7 @@ func main() {
 
 	wg.Wait()
 }
+
 func writeToFile(out chan string) {
 	maxLines, _ := strconv.Atoi(os.Args[4])
 	name := os.Args[2] + "/" + os.Args[3] + strconv.Itoa(fileCount)
@@ -55,14 +56,14 @@ func writeToFile(out chan string) {
 
 		}
 
-		res := <-out
 		count++
 
-		_, err2 := f.WriteString(res + "\n")
+		_, err2 := f.WriteString(<-out + "\n")
 		if err2 != nil {
 			log.Println(err2)
 		}
 	}
+	defer wg.Done()
 }
 
 func readFile(path string, out chan string) {
