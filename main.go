@@ -18,42 +18,53 @@ func main() {
 	if err != nil {
 		log.Println(err)
 	}
+
 	out := make(chan string)
+
 	wg.Add(len(paths))
-	go func() {
-		for _, path := range paths {
-			readFile(path, out)
-		}
-	}()
-	//TODO fix : cannot create path if path is not exist
-	go func() {
-		maxLines, _ := strconv.Atoi(os.Args[4])
-		name := os.Args[2] + "/" + os.Args[3] + strconv.Itoa(fileCount)
-		f, _ := os.Create(name)
-		for {
-			if count%maxLines == 0 {
-				name = os.Args[2] + "/" + os.Args[3] + strconv.Itoa(fileCount)
-				f, err = os.Create(name)
 
-				if err != nil {
-					log.Println(err)
-				}
-				fileCount++
+	for _, path := range paths {
+		go readFile(path, out)
+	}
 
-				defer f.Close()
+	go writeToFile(out)
 
-			}
-			res := <-out
-			count++
-			_, err2 := f.WriteString(res + "\n")
-
-			if err2 != nil {
-				log.Println(err2)
-			}
-		}
-	}()
 	wg.Wait()
 }
+func writeToFile(out chan string) {
+	maxLines, _ := strconv.Atoi(os.Args[4])
+	name := os.Args[2] + "/" + os.Args[3] + strconv.Itoa(fileCount)
+
+	f, err := os.Create(name)
+	if err != nil {
+		os.Mkdir(os.Args[2], os.ModePerm)
+	}
+
+	for {
+		if count%maxLines == 0 {
+			name = os.Args[2] + "/" + os.Args[3] + strconv.Itoa(fileCount)
+			f, err = os.Create(name)
+
+			if err != nil {
+				os.Mkdir(os.Args[2], os.ModePerm)
+			}
+
+			fileCount++
+
+			defer f.Close()
+
+		}
+
+		res := <-out
+		count++
+
+		_, err2 := f.WriteString(res + "\n")
+		if err2 != nil {
+			log.Println(err2)
+		}
+	}
+}
+
 func readFile(path string, out chan string) {
 	file, err := os.Open(path)
 
@@ -67,9 +78,9 @@ func readFile(path string, out chan string) {
 	for scanner.Scan() {
 		out <- scanner.Text()
 	}
+
 	file.Close()
 	defer wg.Done()
-
 }
 
 func getPaths(root string) ([]string, error) {
